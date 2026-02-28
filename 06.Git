@@ -1,0 +1,624 @@
+# Git interview questions 
+
+---
+
+## 📋 Table of Contents
+- [Basic Git Questions](#basic-git-questions)
+- [Intermediate Git Questions](#intermediate-git-questions)
+- [Advanced Git Questions](#advanced-git-questions)
+- [Git Scenario-Based Questions](#git-scenario-based-questions)
+- [Git Commands Cheat Sheet](#git-commands-cheat-sheet)
+
+---
+
+## Basic Git Questions
+
+### Q1: What is Git and why is it used?
+
+**Answer:**
+Git is a **distributed version control system (DVCS)** designed to track changes in source code during software development. It allows multiple developers to work on the same project simultaneously without interfering with each other's work .
+
+Key benefits of Git include:
+- **Distributed architecture**: Every developer has a complete copy of the repository locally
+- **Branching and merging**: Lightweight branching makes experimenting safe and easy
+- **Speed and performance**: Most operations are local, making them extremely fast
+- **Data integrity**: Everything is checksummed with SHA-1 hashes before storage
+- **Collaboration**: Enables teams to work together effectively with features like pull requests
+
+### Q2: Explain the difference between Git and GitHub
+
+**Answer:**
+This is a common confusion point. The key difference is:
+
+| Aspect | Git | GitHub |
+|--------|-----|--------|
+| **Type** | Version control system | Web-based hosting platform |
+| **Purpose** | Tracks code changes locally | Hosts Git repositories remotely |
+| **Installation** | Installed and run locally | Cloud-based service |
+| **Features** | Branching, committing, merging | Pull requests, issues, actions, collaboration tools |
+| **Access** | Command-line tool | Web interface with GUI |
+
+**Analogy**: Git is like the engine of a car (the core technology), while GitHub is like a dealership or service center (a platform built around that technology) .
+
+### Q3: What is the difference between `git pull` and `git fetch`?
+
+**Answer:**
+Both commands are used to update your local repository with changes from a remote, but they work differently :
+
+| Command | What it does | Impact on working directory |
+|---------|--------------|----------------------------|
+| **`git fetch`** | Downloads new data from the remote repository without integrating it | Safe - doesn't change your working files |
+| **`git pull`** | Downloads new data AND immediately merges it into your current branch | Can cause merge conflicts |
+
+**Best practice**: Use `git fetch` followed by `git log` to review changes before merging, then use `git merge` manually. This gives you more control than `git pull` .
+
+### Q4: How do you create a new branch and switch to it?
+
+**Answer:**
+There are several ways to create and switch to a new branch:
+
+```bash
+# Method 1: Create branch then switch
+git branch feature-branch
+git checkout feature-branch
+
+# Method 2: Create and switch in one command (traditional)
+git checkout -b feature-branch
+
+# Method 3: Create and switch (modern Git)
+git switch -c feature-branch
+```
+
+The `git switch` command was introduced in Git 2.23 to provide a clearer separation between branch operations and file restoration .
+
+### Q5: What is a merge conflict and how do you resolve it?
+
+**Answer:**
+A **merge conflict** occurs when Git cannot automatically resolve differences in code between two commits. This typically happens when two branches modify the same line of a file, or when one branch deletes a file while another modifies it .
+
+**Resolution steps:**
+
+1. Identify conflicted files: `git status`
+2. Open conflicted files and look for conflict markers:
+   ```
+   <<<<<<< HEAD
+   (your current branch changes)
+   =======
+   (incoming branch changes)
+   >>>>>>> feature-branch
+   ```
+3. Manually edit the file to keep the desired changes
+4. Remove the conflict markers
+5. Stage the resolved file: `git add <filename>`
+6. Complete the merge: `git commit`
+
+### Q6: What does `git status` show?
+
+**Answer:**
+`git status` displays the state of the working directory and staging area. It shows:
+
+- **Untracked files**: New files Git isn't tracking yet
+- **Changes to be committed**: Files staged for the next commit (after `git add`)
+- **Changes not staged for commit**: Modified files not yet staged
+- **Branch information**: Current branch and its relationship with remote
+
+```bash
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        new file:   index.html
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+        modified:   style.css
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        script.js
+```
+
+---
+
+## Intermediate Git Questions
+
+### Q7: Explain the difference between `git merge` and `git rebase`
+
+**Answer:**
+Both commands integrate changes from one branch into another, but they do it differently :
+
+| Aspect | `git merge` | `git rebase` |
+|--------|-------------|--------------|
+| **History** | Preserves complete history of both branches | Rewrites history by creating linear sequence |
+| **Commit order** | Creates merge commit showing branch convergence | Applies commits from source branch on top of target |
+| **Complexity** | Simpler, safer for shared branches | Creates cleaner history but more complex |
+| **When to use** | Public/shared branches | Local/feature branches before sharing |
+
+**Example:**
+```bash
+# Merge approach
+git checkout main
+git merge feature
+# Creates: A---B---C---D (main)
+#                \     /
+#                 E---F (feature)
+
+# Rebase approach
+git checkout feature
+git rebase main
+git checkout main
+git merge feature
+# Creates: A---B---C---D---E'---F' (main)
+```
+
+### Q8: How do you undo a commit that has already been pushed?
+
+**Answer:**
+There are several approaches depending on your goal :
+
+**1. Create a new commit that reverts changes (safe for shared branches):**
+```bash
+git revert <commit-hash>
+git push origin main
+```
+
+**2. Remove the commit entirely (use with caution on shared branches):**
+```bash
+git reset --hard HEAD~1
+git push --force origin main
+```
+
+**3. Keep changes locally but undo commit:**
+```bash
+git reset --soft HEAD~1  # Keeps changes staged
+git reset --mixed HEAD~1 # Keeps changes unstaged (default)
+```
+
+**Best practice**: Use `git revert` for public/shared branches as it's safe and preserves history. Use `git reset` only for local branches or when you're absolutely sure .
+
+### Q9: What is a detached HEAD state and how do you fix it?
+
+**Answer:**
+A **detached HEAD** occurs when you check out a specific commit rather than a branch. You're no longer on a branch, so any new commits won't belong to any branch and could be lost .
+
+**Common causes:**
+- Checking out a specific commit: `git checkout <commit-hash>`
+- Checking out a tag: `git checkout v1.0.0`
+- Checking out a remote branch without creating local branch
+
+**To fix:**
+```bash
+# Create a new branch from the detached state
+git checkout -b new-branch-name
+
+# OR switch back to an existing branch
+git checkout main
+```
+
+### Q10: Explain Git stash and its use cases
+
+**Answer:**
+`git stash` temporarily saves uncommitted changes (both staged and unstaged) and reverts the working directory to match the last commit. It's useful when you need to switch branches but aren't ready to commit .
+
+**Common commands:**
+```bash
+# Stash current changes
+git stash save "message about changes"
+
+# List all stashes
+git stash list
+
+# Apply the most recent stash (keep in stash)
+git stash apply
+
+# Apply and remove the most recent stash
+git stash pop
+
+# Apply a specific stash
+git stash apply stash@{2}
+
+# Create a branch from a stash
+git stash branch new-branch stash@{0}
+```
+
+**Use cases:**
+- Switching branches mid-task without committing half-done work
+- Pulling remote changes when you have local modifications
+- Experimenting with different approaches
+
+### Q11: How do you amend a commit message or add forgotten changes?
+
+**Answer:**
+Use `git commit --amend` to modify the most recent commit:
+
+```bash
+# Amend commit message only
+git commit --amend -m "New commit message"
+
+# Add forgotten files to the last commit
+git add forgotten-file.txt
+git commit --amend --no-edit  # Keep existing message
+
+# Amend both files and message
+git add another-file.txt
+git commit --amend -m "Updated message"
+```
+
+**Important**: Never amend commits that have been pushed to shared branches, as this rewrites history .
+
+### Q12: What is the difference between `git reset`, `git revert`, and `git checkout`?
+
+**Answer:**
+These commands serve different purposes for moving through history :
+
+| Command | Scope | Operation | Safety |
+|---------|-------|-----------|--------|
+| **`git reset`** | Commit history | Moves branch pointer, optionally modifies working directory | Dangerous - can lose changes |
+| **`git revert`** | Commit history | Creates new commit that undoes changes | Safe - preserves history |
+| **`git checkout`** | Files or branches | Switches branches or restores files | Relatively safe |
+
+**`git reset` modes:**
+- `--soft`: Only moves HEAD, keeps changes staged
+- `--mixed`: Moves HEAD, unstages changes (default)
+- `--hard`: Moves HEAD, discards all changes (destructive)
+
+---
+
+## Advanced Git Questions
+
+### Q13: How does Git store data internally?
+
+**Answer:**
+Git is fundamentally a **content-addressable filesystem** with a VCS interface. It stores data as objects identified by SHA-1 hashes :
+
+**Four main object types:**
+
+1. **Blob** (Binary Large Object): Stores file contents, identified by SHA-1 of the file content
+2. **Tree**: Stores directory structure, filenames, and references to blobs or other trees
+3. **Commit**: Contains metadata (author, message, timestamp) and pointers to a tree and parent commits
+4. **Tag**: Points to a specific commit with additional metadata (annotated tags)
+
+**How it works:**
+```bash
+# Git calculates SHA-1 of file content
+echo 'hello world' | git hash-object --stdin
+# Returns: 3b18e512dba79e4c8300dd08aeb37f8e728b8dad
+
+# This hash becomes the object name, stored in .git/objects/3b/18e5...
+```
+
+When you make a commit, Git:
+1. Creates blobs for each file version
+2. Creates a tree object representing directory structure
+3. Creates a commit object pointing to that tree and parent commits
+
+### Q14: Explain Git's three-tree architecture
+
+**Answer:**
+Git manages content across three primary data structures, often called "trees" :
+
+| Tree | Location | Purpose |
+|------|----------|---------|
+| **HEAD** | `.git/refs/heads/` | Points to the last commit on current branch |
+| **Index/Staging** | `.git/index` | Proposed next commit, built with `git add` |
+| **Working Directory** | Local filesystem | Your actual files, checked out from the repository |
+
+**Flow of changes:**
+```
+Working Directory --(git add)--> Index --(git commit)--> HEAD
+        ↑                           ↑                        ↑
+    git checkout                 git reset                 git reset
+    (updates all)                (updates index)           (updates HEAD)
+```
+
+Commands interact with different trees:
+- `git add` moves changes from Working Directory → Index
+- `git commit` moves changes from Index → HEAD
+- `git checkout` moves changes from HEAD → Working Directory
+- `git reset --mixed` moves HEAD, then updates Index from HEAD
+- `git reset --hard` moves HEAD, updates Index and Working Directory
+
+### Q15: What is the reflog and how do you use it?
+
+**Answer:**
+The **reflog** (reference log) is Git's safety net—it records when the tips of branches and other references were updated in the local repository. It tracks every movement of HEAD and branch pointers .
+
+**View reflog:**
+```bash
+git reflog
+# Output:
+# abc1234 HEAD@{0}: commit: Updated README
+# def5678 HEAD@{1}: checkout: moving from main to feature
+# ghi9012 HEAD@{2}: commit: Initial commit
+```
+
+**Recovering lost commits:**
+```bash
+# You accidentally reset to an old commit
+git reset --hard HEAD~5
+
+# Oops! Need to go back
+git reflog
+# Find the commit you want (e.g., abc1234)
+git checkout abc1234
+# Or create a branch there
+git branch recovery-branch abc1234
+```
+
+**Important**: Reflog is local only—it's not shared with remotes and expires after 90 days by default .
+
+### Q16: How do you squash multiple commits into one?
+
+**Answer:**
+Squashing combines multiple commits into a single commit, creating a cleaner history. There are several methods :
+
+**Method 1: Interactive rebase (most flexible)**
+```bash
+# Squash last 3 commits
+git rebase -i HEAD~3
+
+# In editor, change 'pick' to 'squash' for commits to merge:
+pick abc1234 First commit
+squash def5678 Second commit
+squash ghi9012 Third commit
+
+# Save and provide new commit message
+```
+
+**Method 2: Reset and recommit (simpler)**
+```bash
+git reset --soft HEAD~3
+git commit -m "Combined commit message"
+```
+
+**Method 3: Merge with squash**
+```bash
+git checkout main
+git merge --squash feature-branch
+git commit -m "Feature X implemented"
+```
+
+### Q17: Explain Git hooks and provide common examples
+
+**Answer:**
+Git hooks are scripts that run automatically before or after Git events like committing, pushing, or merging. They're stored in `.git/hooks/` directory .
+
+**Common hook types:**
+
+| Hook | Timing | Common Use Cases |
+|------|--------|------------------|
+| **pre-commit** | Before commit message | Lint code, run tests, check for debug statements |
+| **prepare-commit-msg** | Before editor opens | Auto-populate commit messages with ticket numbers |
+| **commit-msg** | After commit message | Validate commit message format |
+| **post-commit** | After commit | Notify team, update tickets |
+| **pre-push** | Before push | Run integration tests, check for secrets |
+| **post-receive** (server) | After push | Deploy code, trigger CI/CD |
+
+**Example pre-commit hook (.git/hooks/pre-commit):**
+```bash
+#!/bin/sh
+# Prevent committing debug statements
+if grep -n "console.log" --include="*.js" .; then
+    echo "Error: Remove console.log statements before committing"
+    exit 1
+fi
+```
+
+### Q18: What is `git bisect` and how do you use it?
+
+**Answer:**
+`git bisect` performs a binary search through commit history to find which commit introduced a bug. It's incredibly efficient for debugging .
+
+**Basic workflow:**
+```bash
+# Start bisect
+git bisect start
+
+# Mark current version as bad (has the bug)
+git bisect bad
+
+# Mark known good commit (no bug)
+git bisect good <commit-hash>
+
+# Git checks out middle commit. Test it.
+# If bug exists:
+git bisect bad
+# If bug doesn't exist:
+git bisect good
+
+# Repeat until Git identifies the first bad commit
+# Output: <commit-hash> is the first bad commit
+
+# End bisect session
+git bisect reset
+```
+
+**Automated bisect:**
+```bash
+git bisect start HEAD v1.0
+git bisect run npm test  # Run test script automatically
+```
+
+---
+
+## Git Scenario-Based Questions
+
+### Q19: You accidentally committed to the wrong branch. How do you fix it?
+
+**Answer:**
+This is a common scenario with several solutions depending on whether you've pushed :
+
+**Scenario 1: Committed to main instead of feature branch (local only)**
+```bash
+# Create feature branch pointing to current commit
+git branch feature-branch
+
+# Reset main back one commit
+git checkout main
+git reset --hard HEAD~1
+
+# Switch to feature branch with all changes
+git checkout feature-branch
+```
+
+**Scenario 2: Already pushed to remote**
+```bash
+# Create feature branch
+git branch feature-branch
+
+# Revert the commit on main (safe for shared branches)
+git checkout main
+git revert HEAD
+git push origin main
+
+# Push feature branch
+git checkout feature-branch
+git push origin feature-branch
+```
+
+### Q20: How do you recover a deleted branch?
+
+**Answer:**
+If the branch was deleted recently, you can recover it using reflog :
+
+```bash
+# Find the commit hash of the branch tip
+git reflog | grep branch-name
+# Output: abc1234 HEAD@{10}: branch: deleted feature-branch
+
+# Recreate the branch at that commit
+git checkout -b recovered-branch abc1234
+```
+
+If reflog entries have expired, you can use `git fsck` to find dangling commits:
+```bash
+git fsck --lost-found
+# Look for dangling commit messages, then:
+git checkout -b recovered-branch <dangling-commit-hash>
+```
+
+### Q21: You need to split a commit into multiple smaller commits
+
+**Answer:**
+Use interactive rebase to split a commit :
+
+```bash
+# Start interactive rebase for the last N commits
+git rebase -i HEAD~3
+
+# Mark the commit you want to split with 'edit'
+pick abc1234 First commit
+edit def5678 Second commit  # Change 'pick' to 'edit'
+pick ghi9012 Third commit
+
+# Save and exit. Git stops at the commit marked 'edit'
+
+# Reset to split the commit
+git reset HEAD~  # Keep changes but unstage
+
+# Stage and commit in logical chunks
+git add file1.txt
+git commit -m "Part 1: Add file1.txt"
+git add file2.txt
+git commit -m "Part 2: Add file2.txt"
+
+# Continue rebase
+git rebase --continue
+```
+
+### Q22: How do you handle large files in Git?
+
+**Answer:**
+Git isn't designed for large binary files. For large files, use **Git LFS (Large File Storage)** :
+
+```bash
+# Install Git LFS
+git lfs install
+
+# Track file types
+git lfs track "*.psd"
+git lfs track "*.zip"
+git add .gitattributes
+
+# Use Git normally
+git add file.psd
+git commit -m "Add design file"
+git push
+```
+
+**Alternatives:**
+- For very large assets, consider external storage (S3, Google Cloud Storage)
+- Use `git annex` for managing files without storing them in Git
+- For repositories, keep them small (<1GB recommended)
+
+### Q23: Your colleague pushed a commit with sensitive data. What do you do?
+
+**Answer:**
+This requires immediate action to remove sensitive data from history :
+
+```bash
+# If caught immediately (no one else pulled)
+git reset --hard HEAD~1
+git push --force
+
+# If others might have pulled (use BFG Repo-Cleaner or git filter-branch)
+# Using BFG (simpler)
+java -jar bfg.jar --delete-files passwords.txt
+git reflog expire --expire=now --all
+git gc --aggressive --prune=now
+git push --force
+
+# Using git filter-branch (built-in)
+git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch passwords.txt" \
+  --prune-empty --tag-name-filter cat -- --all
+```
+
+**Important follow-up:**
+- Rotate all exposed credentials immediately
+- Force all team members to pull the cleaned history
+- Consider the incident as a security breach
+
+---
+
+## Git Commands Cheat Sheet
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `git init` | Initialize new repository | `git init project-name` |
+| `git clone` | Copy existing repository | `git clone https://github.com/user/repo.git` |
+| `git add` | Stage changes for commit | `git add .` or `git add file.txt` |
+| `git commit` | Commit staged changes | `git commit -m "message"` |
+| `git status` | Show working directory state | `git status` |
+| `git log` | Show commit history | `git log --oneline --graph` |
+| `git branch` | List/create/delete branches | `git branch feature` |
+| `git checkout` | Switch branches or restore files | `git checkout main` |
+| `git switch` | Switch branches (modern) | `git switch feature` |
+| `git merge` | Merge branches | `git merge feature` |
+| `git rebase` | Reapply commits on top of another branch | `git rebase main` |
+| `git pull` | Fetch and merge from remote | `git pull origin main` |
+| `git push` | Push commits to remote | `git push origin main` |
+| `git fetch` | Download from remote without merging | `git fetch origin` |
+| `git remote` | Manage remote connections | `git remote -v` |
+| `git stash` | Temporarily save changes | `git stash save "WIP"` |
+| `git tag` | Create tags for releases | `git tag v1.0.0` |
+| `git diff` | Show differences | `git diff HEAD~2` |
+| `git reset` | Reset current HEAD to specified state | `git reset --hard HEAD~1` |
+| `git revert` | Revert commits | `git revert HEAD` |
+| `git cherry-pick` | Apply specific commits | `git cherry-pick abc1234` |
+| `git bisect` | Binary search for bugs | `git bisect start` |
+| `git blame` | Show who last modified each line | `git blame file.txt` |
+
+---
+
+## 💡 Tips for Git Interview Success
+
+1. **Understand the concepts, not just commands** - Know *why* Git behaves a certain way
+2. **Practice with real scenarios** - Create test repositories and intentionally break things
+3. **Know when to use different approaches** - There's usually multiple ways to solve a problem
+4. **Explain your thought process** - Interviewers care about how you approach problems
+5. **Be honest about what you don't know** - It's better than guessing incorrectly
+
+Good luck with your Git interview! 🚀
